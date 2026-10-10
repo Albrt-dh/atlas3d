@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Atlas 3D de Medicina</title>
+<meta name="theme-color" content="#1d2b33">
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./iconos/icono-192.png">
+<link rel="apple-touch-icon" href="./iconos/icono-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="./css/estilos.css">
+<script>
+  try { const t = JSON.parse(localStorage.getItem('atlas3d-store') || '{}').tema;
+        if (t) document.documentElement.dataset.theme = t; } catch (e) {}
+</script>
+<script type="importmap">
+{ "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/" } }
+</script>
+</head>
+<body>
+<div class="app">
+  <div class="velo solo-movil" id="velo" hidden></div>
+  <aside class="lateral" id="lateral" aria-label="Temario">
+    <div class="marca">
+      <span class="marca-logo" aria-hidden="true">
+        <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="13" fill="#e9e2d6" stroke="#cdc4b8" stroke-width="1.5"/><circle cx="17.5" cy="14.5" r="5.5" fill="#7b6db5"/><circle cx="16.3" cy="13.4" r="2" fill="#3d2f6b"/><ellipse cx="10" cy="20" rx="2.6" ry="1.4" fill="#e0a526"/></svg>
+      </span>
+      <div class="marca-texto">
+        <p class="marca-nombre">Atlas 3D</p>
+        <p class="marca-sub">Estudio para el EXANI-II</p>
+      </div>
+      <button class="herr icono solo-movil" id="btn-cerrar-menu" type="button" data-icono="cerrar" aria-label="Cerrar temario"></button>
+    </div>
+    <button class="interruptor" id="switch-tema" type="button" role="switch" aria-checked="false">
+      <span class="interruptor-pista" aria-hidden="true">
+        <span class="interruptor-sol" data-icono="sol"></span><span class="interruptor-luna" data-icono="luna"></span>
+        <span class="interruptor-perilla"></span>
+      </span>
+      <span class="interruptor-texto">Modo oscuro</span>
+    </button>
+    <div class="avance" id="avance"></div>
+    <nav id="temario"></nav>
+    <button class="enlace" id="btn-acerca" type="button" data-icono="info">Acerca de y créditos</button>
+  </aside>
+
+  <main class="centro">
+    <header class="barra">
+      <button class="herr icono solo-movil" id="btn-menu" type="button" data-icono="menu" aria-label="Abrir temario"></button>
+      <div class="titulo">
+        <p class="miga" id="miga"></p>
+        <h1 id="titulo-modulo">Atlas 3D</h1>
+      </div>
+      <div class="grupo" role="group" aria-label="Herramientas del modelo">
+        <button class="herr" type="button" data-herr="reiniciar" data-icono="reiniciar" title="Volver a la vista inicial"><span>Vista inicial</span></button>
+        <button class="herr" type="button" data-herr="aislar" data-icono="aislar" title="Mostrar solo la estructura seleccionada"><span>Aislar</span></button>
+        <button class="herr" type="button" data-herr="ocultar" data-icono="ocultar" title="Ocultar la estructura seleccionada"><span>Ocultar</span></button>
+        <button class="herr" type="button" data-herr="mostrar" data-icono="mostrar" title="Mostrar todas las estructuras"><span>Mostrar todo</span></button>
+      </div>
+      <div class="segmento" id="segmento-modo" role="group" aria-label="Estilo de visualización">
+        <button type="button" data-modo="escultura">Escultura</button>
+        <button type="button" data-modo="atlas">Atlas</button>
+        <button type="button" data-modo="rayosx">Rayos X</button>
+      </div>
+      <button class="herr destacado" id="btn-examen" type="button" data-icono="examen" title="Practicar con preguntas de este tema"><span>Practicar</span></button>
+      <button class="herr icono" id="btn-rend" type="button" data-icono="actividad" title="Mostrar datos de rendimiento" aria-label="Rendimiento" aria-pressed="false"></button>
+    </header>
+
+    <div class="visor" id="visor">
+      <div class="carga" id="carga" hidden><p id="carga-texto">Preparando el modelo…</p></div>
+      <pre class="depuracion" id="depuracion" hidden></pre>
+      <div class="procesos" id="procesos" role="group" aria-label="Procesos animados" hidden></div>
+      <div class="capa-rotulos" id="rotulos" aria-hidden="true"></div>
+      <p class="leyenda" id="leyenda" role="status" hidden></p>
+      <svg class="lineas" id="lineas" hidden aria-hidden="true"></svg>
+      <div class="capa-etiquetas" id="etiquetas" hidden></div>
+      <div class="panel-herr" id="panel-herr">
+        <button class="herr solo-movil" id="b-panel" type="button" aria-expanded="false" aria-controls="panel-cuerpo">Herramientas</button>
+        <div class="panel-cuerpo" id="panel-cuerpo">
+          <label class="control">Opacidad
+            <input type="range" id="r-opacidad" min="0.1" max="1" step="0.05" value="1"></label>
+          <label class="control">Separar
+            <input type="range" id="r-explosion" min="0" max="1" step="0.02" value="0"></label>
+          <div class="control-corte">
+            <label class="control">Corte
+              <select id="s-corte">
+                <option value="">Sin corte</option>
+                <option value="x">Sagital</option>
+                <option value="z">Coronal</option>
+                <option value="y">Transversal</option>
+              </select></label>
+            <input type="range" id="r-corte" min="0" max="1" step="0.01" value="0.5" disabled aria-label="Posición del corte">
+            <button class="herr" id="b-invertir" type="button" aria-pressed="false" disabled>Invertir</button>
+          </div>
+          <label class="control">Vista
+            <select id="s-vista">
+              <option value="">Elegir…</option>
+              <option value="anterior">Anterior</option>
+              <option value="posterior">Posterior</option>
+              <option value="derecha">Lateral derecha</option>
+              <option value="izquierda">Lateral izquierda</option>
+              <option value="superior">Superior</option>
+              <option value="inferior">Inferior</option>
+            </select></label>
+          <button class="herr" id="b-etiquetas" type="button" aria-pressed="false">Etiquetas</button>
+          <button class="herr" id="b-captura" type="button">Captura</button>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <aside class="ficha" id="ficha" aria-label="Ficha de la estructura">
+    <button class="asa solo-movil" id="btn-ficha" type="button" aria-expanded="false">Ficha</button>
+    <div class="buscador"><input type="search" id="buscar" placeholder="Buscar estructura" aria-label="Buscar estructura en este modelo" autocomplete="off"></div>
+    <div id="ficha-contenido"></div>
+  </aside>
+</div>
+
+<div class="tooltip" id="tooltip" role="status"></div>
+<div class="aviso" id="aviso" role="status" hidden></div>
+
+<dialog id="acerca">
+  <h2>Acerca del Atlas 3D</h2>
+  <p>Plataforma personal de estudio con modelos 3D interactivos. Versión <span id="version"></span>.</p>
+  <h3>Créditos y licencias</h3>
+  <p>Motor 3D: Three.js (licencia MIT). Los modelos anatómicos que se agreguen provendrán de Z-Anatomy (CC BY-SA 4.0), basado en BodyParts3D © DBCLS (CC BY-SA 2.1 Japón). Los modelos celulares y moleculares se generan por código dentro de la app. Las formas reales de proteínas provienen del Protein Data Bank (RCSB, datos de uso libre): bomba Na⁺/K⁺ (3B8E; Morth y cols., Nature 2007), acuaporina 1 (1J4N; Sui y cols., Nature 2001), canal de K⁺ KcsA (1BL8; Doyle y cols., Science 1998) y transportador de glucosa GLUT1 (4PYP; Deng y cols., Nature 2014).</p>
+  <p>El contenido es material de apoyo para estudiar; no sustituye a los libros de texto ni a la guía oficial.</p>
+  <form method="dialog"><button class="herr" type="submit">Cerrar</button></form>
+</dialog>
+
+<script type="module" src="./js/main.js"></script>
+</body>
+</html>
